@@ -1,0 +1,87 @@
+{
+  "name": "genetic-data-svgrepo-com",
+  "type": null,
+  "pins": [
+    {
+      "number": 1,
+      "x": 390.1830272232304,
+      "y": 372.1189981851179,
+      "signal": "node",
+      "direction": "input"
+    },
+    {
+      "number": 2,
+      "x": 407.74349667271633,
+      "y": 430.7320024198428,
+      "signal": "node",
+      "direction": "input"
+    },
+    {
+      "number": 3,
+      "x": 214.30127041742287,
+      "y": 205.58983666061707,
+      "signal": "node",
+      "direction": "input"
+    },
+    {
+      "number": 4,
+      "x": 682.9764065335753,
+      "y": 318.83847549909257,
+      "signal": "node",
+      "direction": "input"
+    },
+    {
+      "number": 5,
+      "x": 331.1738656987295,
+      "y": 654.8210526315788,
+      "signal": "node",
+      "direction": "input"
+    },
+    {
+      "number": 6,
+      "x": 357.5172413793103,
+      "y": 152.62431941923774,
+      "signal": "node",
+      "direction": "output"
+    },
+    {
+      "number": 7,
+      "x": 183.98548094373865,
+      "y": 524.7767695099818,
+      "signal": "node",
+      "direction": "output"
+    },
+    {
+      "number": 8,
+      "x": 597.9528130671506,
+      "y": 541.5027223230489,
+      "signal": "node",
+      "direction": "output"
+    },
+    {
+      "number": 9,
+      "x": 643.9491833030852,
+      "y": 129.6261343012704,
+      "signal": "node",
+      "direction": "output"
+    }
+  ],
+  "internal_wires": [
+    {
+      "source": 6,
+      "target": 3
+    },
+    {
+      "source": 7,
+      "target": 1
+    },
+    {
+      "source": 7,
+      "target": 5
+    },
+    {
+      "source": 9,
+      "target": 4
+    }
+  ]
+}
