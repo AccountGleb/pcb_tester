@@ -228,9 +228,12 @@ class BlockItem(QGraphicsItemGroup):
     def _reposition_label(self) -> None:
         body_rect = self._body.rect()
         lbr = self._name_label.boundingRect()
+        # Label sits ABOVE the body — clear of any wires and pin arrows
+        # which exit downward/sideways. The 4-unit gap matches the
+        # offset previously used below the block.
         self._name_label.setPos(
             body_rect.center().x() - lbr.width() / 2,
-            body_rect.bottom() + 4,
+            body_rect.top() - lbr.height() - 4,
         )
 
     # ==================================================================

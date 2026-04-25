@@ -215,7 +215,10 @@ class BlockTemplate:
 # ----------------------------------------------------------------------
 # Library
 # ----------------------------------------------------------------------
-DEFAULT_BLOCKS_DIR = Path(__file__).resolve().parent / "blocks"
+# The library lives at <project_root>/blocks/. After the refactor that
+# moved this file into editor/, parent.parent walks back up to the
+# project root so existing blocks/ folders next to main.py keep working.
+DEFAULT_BLOCKS_DIR = Path(__file__).resolve().parent.parent / "blocks"
 
 
 class BlockLibrary:
