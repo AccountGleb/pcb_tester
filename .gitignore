@@ -7,3 +7,8 @@ venv/
 .idea/
 *.egg-info/
 .DS_Store
+
+# user data — local-only, never commit
+blocks/
+schematic.json
+*.svg
