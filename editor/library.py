@@ -29,10 +29,14 @@ The block size is fixed at authoring time and does not change on the main
 schematic, so absolute block-local coordinates are sufficient.
 
 Backward compatibility:
-  Old-format files referenced a .svg sibling. Those SVGs are now ignored —
-  only the JSON is consulted. If an old JSON lacks a `shape`, the loader
-  synthesises a default rect (120x80). Any sibling .svg is left on disk
-  untouched so the user can clean them up manually.
+  Old-format files referenced a .svg sibling and stored pin coordinates
+  in the editor's scene space rather than block-local space. Those SVGs
+  are now ignored — only the JSON is consulted. If an old JSON lacks a
+  `shape`, the loader treats it as legacy: it computes the bbox of the
+  pins, recentres them on (0, 0), and synthesises a `rect` shape large
+  enough to enclose every pin (plus a small padding). This makes legacy
+  blocks portable across machines/screens. Any sibling .svg is left on
+  disk untouched so the user can clean them up manually.
 """
 import enum
 import json
@@ -70,6 +74,15 @@ def _infer_side(x: float, y: float, w: float, h: float) -> str:
     if best == dr: return "right"
     if best == dt: return "top"
     return "bottom"
+
+
+# Tunables for the legacy-format migration in BlockTemplate.load().
+# Chosen to leave a small visual margin around the pins so they don't
+# sit exactly on the body edge in legacy (SVG-imported) blocks where
+# pins were placed freely inside the symbol, not pinned to a side.
+_LEGACY_PADDING = 40.0
+_MIN_LEGACY_WIDTH = 60.0
+_MIN_LEGACY_HEIGHT = 40.0
 
 
 # ----------------------------------------------------------------------
@@ -152,15 +165,37 @@ class BlockTemplate:
         # name: prefer the one in JSON, fall back to filename stem
         name = data.get("name") or json_path.stem
 
-        shape = BlockShape.from_dict(data.get("shape"))
+        raw_pins = list(data.get("pins", []))
+
+        # Legacy migration: old JSON files (pre-shape) stored pin
+        # coordinates in the editor's scene space, not block-local space.
+        # On a different screen those absolute coords end up far outside
+        # the block's body — pins "scatter" across the schematic.
+        # Detect this by the absence of `shape`, then recentre the pins
+        # on (0, 0) and synthesise a shape that encloses them all.
+        if "shape" not in data and raw_pins:
+            xs = [float(p["x"]) for p in raw_pins]
+            ys = [float(p["y"]) for p in raw_pins]
+            offset_x = (min(xs) + max(xs)) / 2.0
+            offset_y = (min(ys) + max(ys)) / 2.0
+            spread_w = max(xs) - min(xs)
+            spread_h = max(ys) - min(ys)
+            shape = BlockShape(
+                kind="rect",
+                width=max(spread_w + _LEGACY_PADDING, _MIN_LEGACY_WIDTH),
+                height=max(spread_h + _LEGACY_PADDING, _MIN_LEGACY_HEIGHT),
+            )
+        else:
+            shape = BlockShape.from_dict(data.get("shape"))
+            offset_x = offset_y = 0.0
 
         pins: list[PinDef] = []
-        for p in data.get("pins", []):
-            x = float(p["x"])
-            y = float(p["y"])
+        for p in raw_pins:
+            x = float(p["x"]) - offset_x
+            y = float(p["y"]) - offset_y
             # Infer side from coordinates if missing — legacy JSON files
-            # didn't record it. Uses a generous tolerance so float-rounded
-            # values from the editor still match.
+            # didn't record it. Now that x/y are in block-local space the
+            # nearest-edge heuristic actually makes sense.
             side = p.get("side")
             if side not in ("left", "right", "top", "bottom"):
                 side = _infer_side(x, y, shape.width, shape.height)
@@ -225,8 +260,11 @@ class BlockLibrary:
     """Scans a folder for <name>.json block templates.
 
     Old-format .svg sibling files are ignored (but not deleted). If a JSON
-    file lacks a `shape` field, the loader fills in a default rect, which
-    effectively migrates old pre-shape templates on first read.
+    file lacks a `shape` field, the loader treats it as legacy: pin
+    coordinates are recentred on (0, 0) and a `shape` is synthesised from
+    the pin bbox. The migrated values stay in memory; on the next
+    `BlockTemplate.save()` (e.g. after the user edits the block) the file
+    is rewritten in the modern block-local format.
     """
 
     def __init__(self, directory: Path = DEFAULT_BLOCKS_DIR) -> None:
